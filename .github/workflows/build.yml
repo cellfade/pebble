@@ -1,0 +1,25 @@
+name: macOS build
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version
+      - name: Build app
+        run: ./script/build_app.sh debug
+      - name: Offline checks
+        run: ./script/test_offline.sh
+      - name: Archive preview
+        run: ./script/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macOS-preview
+          path: |
+            dist/*.zip
+            dist/*.sha256
