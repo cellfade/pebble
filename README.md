@@ -1,12 +1,20 @@
-# Local Light Chat
+# Pebble
 
-**Your Mac. Your words.**
+**A little help. Close to home.**
 
-A small native macOS menu bar companion for local Ollama models. Ask a question, rewrite a sentence, dictate a prompt, or attach an image—without a hosted inference account.
+A native macOS workspace for Apple’s on-device model and local Ollama models, with a draggable window, cobalt accents, and a small companion of your own. Ask a question, rewrite a sentence, dictate a prompt, or attach an image—without a hosted inference account.
 
-> 0.1.0 developer preview. The downloadable build is Apple silicon and ad hoc signed, not Apple-notarized. Build from source if macOS refuses the downloaded preview. No model weights are included.
+> 0.2.0 developer preview. The downloadable build is Apple silicon and ad hoc signed, not Apple-notarized. Build from source if macOS refuses the downloaded preview. No model weights are included.
 
-## Get running
+## Choose your local engine
+
+**Apple on-device** works on a compatible Apple Intelligence Mac running macOS 26+ with Apple Intelligence enabled and the model ready. It needs no separate runtime or API key. Pebble checks availability and explains unavailable states. This engine handles text/chat/rewriting; it does not analyze attachments.
+
+**Ollama** gives the direct-download edition configurable models and image understanding. It works on macOS 14+; Apple silicon is recommended and the preview binary is arm64. The instructions below set it up explicitly.
+
+A separate `AppStore` Xcode configuration uses only Apple’s on-device engine, removes the Ollama installer guidance/model picker/image attachment surface, targets macOS 26+, and uses sandbox entitlements without a network-client permission. It is a submission candidate, not an accepted App Store release. See [App Store readiness](docs/APP_STORE.md).
+
+## Get running with Ollama
 
 1. **Install Ollama.** Download the [official Mac app](https://ollama.com/download/mac), move it to Applications, and open it. Ollama requires macOS 14 or newer. Apple silicon is recommended for this app; the preview is tested on Apple silicon only.
 2. **Download a model.** In Terminal, run:
@@ -18,7 +26,7 @@ A small native macOS menu bar companion for local Ollama models. Ask a question,
    For image understanding, optionally add `ollama pull qwen3.5:9b`. Models are separate multi-GB downloads. This app uses a 4096-token context; model download size and useful memory needs vary. A Mac with 16 GB RAM is a practical starting point for the tested 8B/9B models, not a minimum guaranteed for every workload. Keep substantial disk headroom beyond the model files.
 3. **Install this app.** Download a preview from Releases, extract it, and move the app to Applications. See the preview trust limitation above. For the supported source-build path below, run the build command and copy the resulting `.app` from `dist/` to Applications.
 4. **Open the app.** Follow the in-app setup guide and press Check connection. It connects only to `127.0.0.1:11434`.
-5. **Press Control-Space.** The panel opens and starts dictation. Allow microphone and speech recognition only if you want voice input. You can always type instead. Review the text, then press Enter to send.
+5. **Use the workspace.** You can choose Apple on-device when available. Drag the native title bar to move the window or resize it from its edges. **Press Control-Space** The panel opens and starts dictation. Allow microphone and speech recognition only if you want voice input. You can always type instead. Review the text, then press Enter to send.
 
 If you use the Ollama GUI, keep it running. If you installed the command-line runtime without the GUI or a service, run `ollama serve` in a separate Terminal. Do not start a second server if the endpoint is already available.
 
@@ -49,15 +57,15 @@ Image attachments are for **understanding**, not image generation/editing. Gener
 
 ## Build from source
 
-Use macOS 14+ with Xcode Command Line Tools and Swift 6 or newer. Install the tools with `xcode-select --install` if needed. No third-party Swift dependencies are required.
+Use macOS 14+ with Xcode Command Line Tools and Swift 6 or newer. Install the tools with `xcode-select --install` if needed. No third-party Swift dependencies are required. Full native Liquid Glass and Foundation Models are compiled when building with Xcode 26+/Swift 6.2+ and the macOS 26 SDK; builds with older SDKs use standard macOS materials and the Ollama engine. Full Xcode 26+ is needed for the App Store archive configuration.
 
 ```sh
-git clone https://github.com/cellfade/local-light-chat.git
-cd local-light-chat
+git clone https://github.com/cellfade/pebble.git
+cd pebble
 ./script/build_and_run.sh
 ```
 
-The result is `dist/Local Light Chat.app`. The app intentionally lives in the menu bar and has no Dock icon. The build script uses your current architecture. Intel source builds are not yet validated.
+The result is `dist/Pebble.app`. The app has a normal movable/resizable window and Dock icon, plus a menu bar shortcut. It remembers window position and size; closing the window leaves the menu bar companion running. The build script uses your current architecture. Intel source builds are not yet validated.
 
 ```sh
 ./script/test_offline.sh     # no Ollama or model downloads
@@ -67,6 +75,12 @@ The result is `dist/Local Light Chat.app`. The app intentionally lives in the me
 ```
 
 See [installation and troubleshooting](docs/INSTALL.md), [distribution](docs/DISTRIBUTION.md), [release board](docs/ROADMAP.md), and [contributing](CONTRIBUTING.md). Ollama and model licenses remain separate from this repository's MIT license.
+
+## Product and release
+
+- [Screenshots and interaction demo](docs/MEDIA.md)
+- [Brand assets: SVG, monochrome mark, icon](docs/brand/README.md)
+- [App Store submission path and remaining gates](docs/APP_STORE.md)
 
 ## Status
 

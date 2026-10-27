@@ -6,14 +6,17 @@
 - [x] Keyboard composition handling and accessibility labels
 
 ## Sprint 2 · Product preview
-- [ ] Name/icon direction selected by the owner
-- [ ] SVG logo, app icon, menu bar mark, and brand kit
+- [x] Name/icon direction selected by the owner: Pebble
+- [x] SVG logo, app icon, menu bar mark, and brand kit
 - [x] In-app setup guide and explicit model installation instructions
 - [x] Repeatable app/ZIP packaging and build CI
-- [ ] Public GitHub source and preview release
+- [x] Public GitHub source
+- [ ] Public preview release
 - [ ] Real application screenshots and demo video
 
 ## Sprint 3 · Public distribution
+- [x] Standalone Apple on-device text engine and sandbox configuration
+- [x] App Store Xcode project/configuration
 - [ ] Developer ID signing identity and Apple notarization credentials
 - [ ] Signed, notarized, stapled public artifact
 - [ ] Fresh-Mac setup/permission testing

@@ -5,15 +5,21 @@ struct SetupView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Image(systemName: "sun.max.fill").font(.title).foregroundStyle(.orange).accessibilityHidden(true)
+                PebbleAvatar(size: 58)
                 VStack(alignment: .leading) { Text(Product.name).font(.title2.weight(.semibold)); Text(Product.tagline).foregroundStyle(.secondary) }
             }
-            Text("A small assistant, running on your Mac.").font(.headline)
-            Text("Chat, rewrite, dictate, and ask about images with models you choose. No account or API key required for local inference.").fixedSize(horizontal: false, vertical: true)
+            Text("Make yourself at home.").font(.headline)
+            Text(Product.isAppStoreBuild ? "Chat, rewrite, and dictate with Apple’s on-device model. No account, API key, or separate runtime installation." : "Chat, rewrite, dictate, and ask about images with models you choose. No account or API key required for local inference.").fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Apple on-device · No separate runtime", systemImage: "apple.logo").font(.headline)
+                Text(AppleModelClient.availabilityMessage).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Button("Use Apple on-device") { store.provider = "Apple"; store.finishSetup() }.disabled(!AppleModelClient.isAvailable)
+            }.padding(14).modifier(PebbleGlass())
+            if !Product.isAppStoreBuild {
             Divider()
             VStack(alignment: .leading, spacing: 12) {
                 Label("1. Install and open Ollama", systemImage: "square.and.arrow.down") .font(.headline)
-                Text("Ollama runs the models. Install its Mac app, move it to Applications, then open it.").font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text("Optional Ollama engine: Ollama runs the models. Install its Mac app, move it to Applications, then open it.").font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Link("Download Ollama for macOS ↗", destination: Product.ollamaURL)
                 Label("2. Download a chat model", systemImage: "internaldrive").font(.headline)
                 Text("Run this in Terminal. Downloads need internet and several GB of free space; the app never starts them automatically.").font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -26,6 +32,7 @@ struct SetupView: View {
                     Text("127.0.0.1:11434").font(.caption.monospaced()).foregroundStyle(.secondary)
                 }
             }
+            }
             Divider()
             Text("⌃Space opens dictation · Enter sends · Shift-Enter adds a line").font(.caption)
             Text("Microphone and Speech Recognition permissions are requested only when you choose dictation. Speech stays on-device when supported. Browser search and Share are explicit actions.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -34,7 +41,7 @@ struct SetupView: View {
                 Spacer()
                 Button("Continue") { store.finishSetup() }.buttonStyle(.borderedProminent)
             }
-        }.padding(24).frame(width: 470).background(Color(nsColor: .windowBackgroundColor)).task { await store.refresh() }
+        }.padding(24).frame(width: 470).task { await store.refresh() }
     }
     private func command(_ text: String) -> some View {
         HStack {
@@ -48,6 +55,32 @@ struct AssistantRootView: View {
     @ObservedObject var store: AssistantStore
     @ObservedObject var voice: DictationService
     var body: some View {
-        Group { if store.showingSetup { SetupView(store: store) } else { AssistantView(store: store, voice: voice) } }
+        NavigationSplitView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 9) { PebbleAvatar(size: 42); VStack(alignment: .leading, spacing: 2) { Text("Pebble").font(.system(size: 20, weight: .semibold, design: .rounded)); Text("YOUR LOCAL COMPANION").font(.system(size: 8, weight: .semibold)).tracking(1).foregroundStyle(.secondary) } }.padding(.horizontal, 16).padding(.top, 20)
+                List(selection: Binding<String?>(get: { store.mode }, set: { if let value = $0 { store.mode = value; store.showingSetup = false } })) {
+                    Section("WORKSPACE") {
+                        Label("Chat", systemImage: "bubble.left").tag("Ask")
+                        Label("Rewrite", systemImage: "text.alignleft").tag("Rewrite")
+                        if !Product.isAppStoreBuild { Label("Image questions", systemImage: "photo").tag("Images") }
+                    }
+                }.listStyle(.sidebar).disabled(store.busy)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("RUNS ON YOUR MAC").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    Picker("Engine", selection: $store.provider) { Text("Apple on-device").tag("Apple"); if !Product.isAppStoreBuild { Text("Ollama").tag("Ollama") } }.disabled(store.busy)
+                    if store.provider == "Ollama" { Picker("Model", selection: $store.model) { ForEach(store.models) { Text($0.name).tag($0.name) } }.disabled(store.busy) }
+                    Label(store.provider == "Apple" ? (AppleModelClient.isAvailable ? "Apple model ready" : "Apple model unavailable") : (store.models.isEmpty ? "Ollama not ready" : "Ollama connected"), systemImage: "desktopcomputer").font(.caption).foregroundStyle(.secondary)
+                    Text(store.shortcutStatus).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Divider()
+                    Button { voice.stop(); store.showingSetup = true } label: { Label("Setup & help", systemImage: "gearshape") }.buttonStyle(.plain)
+                    Text("v\(Product.version) · Developer preview").font(.caption2).foregroundStyle(.secondary)
+                }.padding(16)
+            }.navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 250)
+        } detail: {
+            if store.showingSetup { ScrollView { SetupView(store: store).frame(maxWidth: .infinity) }.background(.background) }
+            else { AssistantView(store: store, voice: voice) }
+        }.tint(.cobalt).frame(minWidth: 860, minHeight: 640)
+         .onChange(of: store.provider) { _, _ in Task { await store.refresh() } }
+         .task { await store.refresh() }
     }
 }

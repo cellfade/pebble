@@ -20,10 +20,10 @@ import SwiftUI
             SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
         }
         guard sessionID == id else { return }
-        guard speech == .authorized else { message = "Enable Speech Recognition for Local Assistant in System Settings → Privacy & Security."; return }
+        guard speech == .authorized else { message = "Enable Speech Recognition for Pebble in System Settings → Privacy & Security."; return }
         let mic = await AVCaptureDevice.requestAccess(for: .audio)
         guard sessionID == id else { return }
-        guard mic else { message = "Enable Microphone for Local Assistant in System Settings → Privacy & Security."; return }
+        guard mic else { message = "Enable Microphone for Pebble in System Settings → Privacy & Security."; return }
         guard let recognizer = SFSpeechRecognizer(locale: .current), recognizer.isAvailable, recognizer.supportsOnDeviceRecognition else {
             message = "On-device dictation is unavailable for your current language. Use typing or enable a supported dictation language in System Settings."; return
         }

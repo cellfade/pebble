@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 — Developer preview
+## 0.2.0 — Developer preview
 
 - Native menu bar chat and rewriting through local Ollama.
 - On-device dictation, Control-Space registration, Enter/Shift-Enter composition handling.

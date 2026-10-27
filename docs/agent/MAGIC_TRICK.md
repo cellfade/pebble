@@ -1,7 +1,7 @@
-# Magic Trick
+# Pebble · Magic Trick
 
-The assistant is a small pool of light on your own desk: immediate, warm, and close at hand. Voice becomes editable text, then an explicit send. The icon should read as an owned little object rather than an abstract AI universe.
+A small, curious cobalt companion that lives close to your work. The owner chose the original rounded Pebble character: a tilted pebble body, cream face, navy oval eyes, tiny amber cheek light, and little feet. The robot is friendly rather than futuristic or omniscient.
 
-Voice: plain, calm, concrete. No claims that all software on the Mac is offline, no claims of perfect privacy or factual certainty. Say exactly which action uses the browser or a sharing service.
+Phrase: “A little help. Close to home.” Cobalt is the active accent; amber belongs to the character and recording/status emphasis. Native materials and Liquid Glass frame the controls, while prompts and answers keep readable system-adaptive surfaces. Voice becomes editable text before an explicit send. No automatic clipboard capture, browser queries, or sharing.
 
-Originality constraints: no robot heads, brain glyphs, generic sparkle as the final brand mark, circuit lines, padlocks, or sweeping AI gradients. One memorable silhouette, one warm aperture, and a crisp monochrome menu bar rendition. Retain native macOS controls and keyboard behavior.
+Avoid copied franchise silhouettes, noisy circuit details, faceless abstract AI swirls, and decoration that weakens keyboard input or contrast. The dimensional icon and simple SVG/menu bar mark share the same tilted face and proportions.

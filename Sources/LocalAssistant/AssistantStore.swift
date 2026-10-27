@@ -12,6 +12,7 @@ struct ModelList: Decodable { let models: [InstalledModel] }
 @MainActor final class AssistantStore: ObservableObject {
     @Published var showingSetup = !UserDefaults.standard.bool(forKey: "setupCompleted")
     @Published var checking = false
+    @Published var provider = (Product.isAppStoreBuild || AppleModelClient.isAvailable) ? "Apple" : "Ollama"
     @Published var models: [InstalledModel] = []
     @Published var model = "qwen3:8b"
     @Published var prompt = ""
@@ -25,11 +26,12 @@ struct ModelList: Decodable { let models: [InstalledModel] }
     @Published var copied = false
     @Published var choosingImage = false
     @Published var attachment: ImageAttachment?
-    var canSend: Bool { !busy && !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && models.contains(where: {$0.name == model}) }
+    var canSend: Bool { !busy && !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (provider == "Apple" ? AppleModelClient.isAvailable && attachment == nil : models.contains(where: {$0.name == model})) }
     private var task: Task<Void, Never>?
     private let client = OllamaClient()
     func refresh() async {
         guard !checking, !busy else { return }
+        if provider == "Apple" { hasError = !AppleModelClient.isAvailable; status = AppleModelClient.availabilityMessage; return }
         checking = true
         defer { checking = false }
         do {
@@ -46,13 +48,15 @@ struct ModelList: Decodable { let models: [InstalledModel] }
     }
     func send() {
         guard canSend else { return }
-        let text = prompt, selected = model, rewrite = mode == "Rewrite", image = attachment?.data
+        let text = prompt, selected = model, rewrite = mode == "Rewrite", image = attachment?.data, selectedProvider = provider
         busy = true; startedAt = Date(); hasError = false; status = "Generating locally…"
         task = Task {
             defer { busy = false; startedAt = nil; task = nil }
             do {
                 let start = Date()
-                let result = try await client.chat(model: selected, prompt: text, rewrite: rewrite, image: image)
+                let result: String
+                if selectedProvider == "Apple" { result = try await AppleModelClient().chat(prompt: text, rewrite: rewrite) }
+                else { result = try await client.chat(model: selected, prompt: text, rewrite: rewrite, image: image) }
                 try Task.checkCancellation()
                 answer = result
                 status = String(format: "Finished locally · %.1fs", Date().timeIntervalSince(start))
@@ -65,8 +69,10 @@ struct ModelList: Decodable { let models: [InstalledModel] }
         }
     }
     func attach(_ url: URL) {
+        guard !Product.isAppStoreBuild else { hasError = true; status = "Image questions are available in the Ollama desktop edition."; return }
         do {
             attachment = try ImageAttachment.load(url)
+            provider = "Ollama"
             if models.contains(where: {$0.name == "qwen3.5:9b"}) { model = "qwen3.5:9b" }
             hasError = false
             status = "Image attached. Ask a question about it."

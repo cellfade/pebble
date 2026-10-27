@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+<title id="title">Pebble</title><desc id="desc">A tilted cobalt companion with a cream face, navy eyes and a warm amber cheek light.</desc>
+<defs><linearGradient id="cobalt" x1=".15" y1="0" x2=".85" y2="1"><stop stop-color="#4c8cff"/><stop offset=".45" stop-color="#2257eb"/><stop offset="1" stop-color="#1237a3"/></linearGradient><linearGradient id="face" x2=".7" y2="1"><stop stop-color="#fffaf0"/><stop offset="1" stop-color="#f0e7d9"/></linearGradient></defs>
+<ellipse cx="83" cy="227" rx="24" ry="14" fill="#153aa7"/><ellipse cx="177" cy="227" rx="24" ry="14" fill="#153aa7"/>
+<path d="M38 198C16 165 29 106 58 64C83 28 117 17 148 26C185 36 216 91 225 138C234 183 212 222 175 230C124 241 61 234 38 198Z" fill="url(#cobalt)"/>
+<g transform="rotate(27 132 113)"><rect x="50" y="60" width="160" height="100" rx="49" fill="#143daa"/><rect x="54" y="63" width="152" height="93" rx="45" fill="url(#face)"/><ellipse cx="93" cy="101" rx="12" ry="19" fill="#11264b"/><ellipse cx="144" cy="101" rx="12" ry="19" fill="#11264b"/><ellipse cx="89" cy="94" rx="3" ry="5" fill="#fff" opacity=".75"/><ellipse cx="140" cy="94" rx="3" ry="5" fill="#fff" opacity=".75"/><circle cx="180" cy="125" r="12" fill="#ffb43a"/><circle cx="177" cy="121" r="4" fill="#ffedac"/></g>
+</svg>

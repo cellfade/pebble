@@ -1,127 +1,146 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+
 struct AssistantView: View {
     @ObservedObject var store: AssistantStore
     @ObservedObject var voice: DictationService
     private func submit() { guard !voice.preparing else { return }; voice.stop(); store.send() }
-    private func saveResponse() {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.plainText]
-        panel.nameFieldStringValue = "Local Assistant Response.txt"
-        panel.begin { result in
-            guard result == .OK, let url = panel.url else { return }
-            do { try store.answer.write(to: url, atomically: true, encoding: .utf8) }
-            catch { store.hasError = true; store.status = "Could not save: \(error.localizedDescription)" }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            header
+            if store.hasError {
+                Label(store.status, systemImage: "exclamationmark.triangle")
+                    .font(.callout).padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 12)).textSelection(.enabled)
+            }
+            composer
+            response
+        }
+        .padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(.background)
+        .fileImporter(isPresented: $store.choosingImage, allowedContentTypes: [.png, .jpeg, .heic, .webP]) { result in
+            switch result { case .success(let url): Task { store.attach(url); await store.refresh() }; case .failure(let error): store.hasError = true; store.status = error.localizedDescription }
+        }
+        .onChange(of: store.answer) { _, _ in store.copied = false }
+    }
+    private var header: some View {
+        HStack(alignment: .center, spacing: 14) {
+            PebbleAvatar(size: 60)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(store.mode == "Rewrite" ? "Find the right words." : store.mode == "Images" ? "Take a closer look." : "A little space to think.")
+                    .font(.system(size: 25, weight: .semibold, design: .rounded))
+                Text(store.mode == "Rewrite" ? "Your meaning, a little clearer." : store.mode == "Images" ? "Ask about an image with a local vision model." : "Ask, explore, or talk it through. Right here on your Mac.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 12)
+            Button { Task { await store.refresh() } } label: { Image(systemName: "arrow.clockwise").frame(width: 28, height: 28) }
+                .help("Check local model connection").accessibilityLabel("Refresh model connection").disabled(store.busy || store.checking)
         }
     }
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private var composer: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "sparkle").foregroundStyle(.tint).accessibilityHidden(true)
-                Text(Product.name).font(.headline)
+                Text(store.mode == "Rewrite" ? "YOUR DRAFT" : "YOUR PROMPT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
-                Button { Task { await store.refresh() } } label: { Image(systemName: "arrow.clockwise").frame(width: 24, height: 24) }
-                    .accessibilityLabel("Refresh runtime status").help("Refresh runtime status").disabled(store.busy)
-            }
-            Text(store.shortcutStatus).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Label(store.status, systemImage: store.hasError ? "exclamationmark.triangle" : "desktopcomputer")
-                .font(.callout).foregroundStyle(store.hasError ? .primary : .secondary).fixedSize(horizontal: false, vertical: true)
-            Picker("Model", selection: $store.model) { ForEach(store.models) { Text($0.name).tag($0.name) } }.disabled(store.busy)
-            Picker("Mode", selection: $store.mode) { Text("Ask").tag("Ask"); Text("Rewrite").tag("Rewrite") }.pickerStyle(.segmented).disabled(store.busy)
-            HStack {
-                Text(store.mode == "Rewrite" ? "Text to rewrite" : "Your prompt").font(.subheadline.weight(.medium))
-                Spacer()
-                Button {
-                    if voice.recording { voice.stop() }
-                    else {
-                        let original = store.prompt
-                        Task { await voice.start { transcript in store.prompt = original + (original.isEmpty ? "" : "\n") + transcript } }
-                    }
-                } label: {
-                    Label(voice.preparing ? "Enabling…" : voice.recording ? "Stop dictation" : "Dictate", systemImage: voice.recording ? "stop.circle.fill" : "mic")
-                }.keyboardShortcut("d", modifiers: [.command, .shift]).disabled(store.busy || voice.preparing)
-                 .help("Start or stop on-device dictation (Command-Shift-D)")
+                Text("Enter ↵ to send").font(.caption).foregroundStyle(.secondary)
             }
             PromptEditor(text: $store.prompt, editable: !store.busy && !voice.recording && !voice.preparing, onSubmit: submit)
-                .frame(height: 110).background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
-            HStack {
-                Button {
-                    voice.stop()
-                    guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else { store.status = "No text on the clipboard."; return }
-                    store.prompt += (store.prompt.isEmpty ? "" : "\n") + text
-                } label: { Label("Paste", systemImage: "doc.on.clipboard") }
-                .disabled(store.busy || voice.preparing).help("Append clipboard text to your prompt. Command-V pastes at the cursor in the editor.")
-                Button { store.choosingImage = true } label: { Label("Attach image", systemImage: "photo") }.disabled(store.busy)
-                if let image = store.attachment {
-                    if let preview = NSImage(data: image.data) { Image(nsImage: preview).resizable().scaledToFit().frame(width: 32, height: 32).accessibilityLabel("Attached image preview") }
-                    Text(image.name).font(.caption).lineLimit(1).help(image.name)
-                    Button { store.attachment = nil } label: { Image(systemName: "xmark.circle") }.accessibilityLabel("Remove attached image").disabled(store.busy)
-                }
+                .frame(minHeight: 110, idealHeight: 140, maxHeight: 170)
+                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.quaternary, lineWidth: 1))
+            if let attachment = store.attachment {
+                HStack(spacing: 10) {
+                    if let preview = NSImage(data: attachment.data) { Image(nsImage: preview).resizable().scaledToFit().frame(width: 40, height: 40).accessibilityLabel("Attached image") }
+                    Text(attachment.name).font(.caption).lineLimit(1)
+                    Spacer()
+                    Button { store.attachment = nil } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("Remove image").disabled(store.busy)
+                }.padding(8).background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
             }
-            if !voice.message.isEmpty { Text(voice.message).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+            if !voice.message.isEmpty { Text(voice.message).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+            PebbleGlassGroup {
+                HStack(spacing: 8) {
+                    Button {
+                        if voice.recording { voice.stop() }
+                        else { let original = store.prompt; Task { await voice.start { store.prompt = original + (original.isEmpty ? "" : "\n") + $0 } } }
+                    } label: {
+                        Label(voice.preparing ? "Enabling…" : voice.recording ? "Stop" : "Dictate", systemImage: voice.recording ? "stop.circle.fill" : "mic")
+                    }.keyboardShortcut("d", modifiers: [.command, .shift]).disabled(store.busy || voice.preparing)
+                     .help("Start or stop on-device dictation (Command-Shift-D)")
+                    Button { paste() } label: { Image(systemName: "doc.on.clipboard") }.accessibilityLabel("Paste clipboard text").help("Append clipboard text to prompt").disabled(store.busy || voice.preparing)
+                    if !Product.isAppStoreBuild { Button { store.choosingImage = true } label: { Image(systemName: "photo.badge.plus") }.accessibilityLabel("Attach image").help("Attach an image for local vision analysis").disabled(store.busy) }
+                    Spacer()
+                    if store.busy { Button("Cancel") { store.cancel() }.keyboardShortcut(.cancelAction) }
+                    else { Button(action: submit) { Label(store.mode == "Rewrite" ? "Rewrite" : "Send", systemImage: "arrow.up") }.keyboardShortcut(.return, modifiers: .command).buttonStyle(.borderedProminent).disabled(!store.canSend || voice.preparing) }
+                }.controlSize(.large).padding(10).modifier(PebbleGlass())
+            }
+            Text("Shift-Enter for a new line · Review dictation before sending").font(.caption2).foregroundStyle(.secondary)
+        }
+    }
+    private var response: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Enter to send · Shift-Enter for a new line").font(.caption).foregroundStyle(.secondary)
+                Text("PEBBLE’S RESPONSE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
-                if store.busy {
-                    Button("Cancel") { store.cancel() }.keyboardShortcut(.cancelAction)
-                } else {
-                    Button(store.mode == "Rewrite" ? "Rewrite" : "Send", action: submit).keyboardShortcut(.return, modifiers: .command)
-                        .buttonStyle(.borderedProminent).disabled(!store.canSend || voice.preparing)
-                }
+                if !store.busy && !store.answer.isEmpty { Text(store.status).font(.caption).foregroundStyle(.secondary) }
             }
-            HStack {
-                Button {
-                    var components = URLComponents(string: "https://duckduckgo.com/")!
-                    components.queryItems = [URLQueryItem(name: "q", value: store.prompt)]
-                    if let url = components.url { NSWorkspace.shared.open(url) }
-                } label: { Label("Search in browser", systemImage: "safari") }
-                .disabled(store.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .help("Open this prompt as a search in your default browser. The app does not fetch results.")
-                Spacer()
-            }
-            Divider()
             if store.busy {
                 HStack(spacing: 12) {
                     ProgressView().controlSize(.small).accessibilityLabel("Waiting for AI response")
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Working on your response…").font(.callout.weight(.medium))
-                        TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                            Text("Running locally · \(Int(timeline.date.timeIntervalSince(store.startedAt ?? timeline.date)))s elapsed").font(.caption).foregroundStyle(.secondary)
-                        }.accessibilityHidden(true)
+                        Text("Pebble is thinking…").font(.callout.weight(.medium))
+                        TimelineView(.periodic(from: .now, by: 1)) { context in Text("On your Mac · \(max(0, Int(context.date.timeIntervalSince(store.startedAt ?? context.date))))s elapsed").font(.caption).foregroundStyle(.secondary) }.accessibilityHidden(true)
                     }
                     Spacer()
-                }.padding(12).background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                }.padding(14).modifier(PebbleGlass())
             }
             ScrollView {
-                Text(store.answer.isEmpty ? (store.busy ? "You can cancel while the model is working." : "Ask a question, dictate a prompt, or choose Rewrite.") : store.answer)
-                    .foregroundStyle(store.answer.isEmpty ? .secondary : .primary).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityLabel(store.answer.isEmpty ? "Response placeholder" : "AI response").accessibilityValue(store.answer)
-            }.frame(height: store.busy ? 130 : 190)
-            HStack {
-                Button(store.copied ? "Copied" : "Copy response") {
-                    NSPasteboard.general.clearContents(); NSPasteboard.general.setString(store.answer, forType: .string); store.copied = true
-                }.disabled(store.answer.isEmpty || store.busy).keyboardShortcut("c", modifiers: [.command, .shift]).help("Copy the AI response (Command-Shift-C)")
-                ShareLink(item: store.answer) { Label("Share…", systemImage: "square.and.arrow.up") }.disabled(store.answer.isEmpty || store.busy).help("Choose a macOS sharing destination")
-                Menu("More") {
-                    Button("Setup & installation…") { voice.stop(); store.showingSetup = true }
-                    Button("About \(Product.name)…") { NSApplication.shared.orderFrontStandardAboutPanel(options: [.applicationName: Product.name, .applicationVersion: Product.version, .credits: NSAttributedString(string: "A native macOS companion for local Ollama models.")]) }
-                    Divider()
-                    Button("Copy prompt") {
-                        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(store.prompt, forType: .string)
-                    }.disabled(store.prompt.isEmpty)
-                    Button("Save response…") { saveResponse() }.disabled(store.answer.isEmpty || store.busy)
+                if store.answer.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "bubble.left.and.text.bubble.right").font(.system(size: 28)).foregroundStyle(Color.cobalt.opacity(0.7)).accessibilityHidden(true)
+                        Text(store.busy ? "Making room for a good answer." : "Ready when you are.").font(.headline)
+                        Text(store.busy ? "You can cancel at any time." : "Start with a question, a rough draft, or an image.").font(.callout).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity).padding(.vertical, 30)
+                } else {
+                    Text(store.answer).font(.system(size: 15)).lineSpacing(4).textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading).accessibilityLabel("AI response").accessibilityValue(store.answer).padding(4)
                 }
-                Button("Clear") { voice.stop(); store.prompt = ""; store.answer = ""; store.attachment = nil; store.copied = false }.disabled(store.busy || voice.preparing)
+            }.frame(minHeight: 110, maxHeight: .infinity)
+            HStack(spacing: 12) {
+                Button { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(store.answer, forType: .string); store.copied = true } label: { Label(store.copied ? "Copied" : "Copy", systemImage: "doc.on.doc") }
+                    .keyboardShortcut("c", modifiers: [.command, .shift]).disabled(store.answer.isEmpty || store.busy).help("Copy response (Command-Shift-C)")
+                ShareLink(item: store.answer) { Label("Share", systemImage: "square.and.arrow.up") }.disabled(store.answer.isEmpty || store.busy)
+                Menu {
+                    Button("Copy prompt") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(store.prompt, forType: .string) }.disabled(store.prompt.isEmpty)
+                    Button("Save response…") { saveResponse() }.disabled(store.answer.isEmpty || store.busy)
+                    Button("Search prompt in browser") { search() }.disabled(store.prompt.isEmpty)
+                    Divider()
+                    Button("Setup & installation…") { voice.stop(); store.showingSetup = true }
+                    Button("About Pebble") { NSApplication.shared.orderFrontStandardAboutPanel(nil) }
+                } label: { Label("More", systemImage: "ellipsis") }.fixedSize()
                 Spacer()
-                Button("Quit") { voice.stop(); NSApplication.shared.terminate(nil) }
-            }
-            Text("Text and voice processed on this Mac").font(.caption).foregroundStyle(.secondary)
-        }.padding(20).frame(width: 470).background(Color(nsColor: .windowBackgroundColor))
-         .task { await store.refresh() }.onDisappear { voice.stop() }
-         .fileImporter(isPresented: $store.choosingImage, allowedContentTypes: [.png, .jpeg, .heic, .webP]) { result in
-             switch result { case .success(let url): store.attach(url); case .failure(let error): store.hasError = true; store.status = error.localizedDescription }
-         }
-         .onChange(of: store.answer) { _, _ in store.copied = false }
+                Button("Clear") { voice.stop(); store.prompt = ""; store.answer = ""; store.attachment = nil; store.copied = false }.disabled(store.busy || voice.preparing)
+            }.controlSize(.regular)
+        }
+    }
+    private func paste() {
+        voice.stop()
+        guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else { store.status = "No text on the clipboard."; return }
+        store.prompt += (store.prompt.isEmpty ? "" : "\n") + text
+    }
+    private func search() {
+        var url = URLComponents(string: "https://duckduckgo.com/")!
+        url.queryItems = [URLQueryItem(name: "q", value: store.prompt)]
+        if let destination = url.url { NSWorkspace.shared.open(destination) }
+    }
+    private func saveResponse() {
+        let panel = NSSavePanel(); panel.allowedContentTypes = [.plainText]; panel.nameFieldStringValue = "Pebble response.txt"
+        panel.begin { result in
+            guard result == .OK, let url = panel.url else { return }
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            do { try store.answer.write(to: url, atomically: true, encoding: .utf8) }
+            catch { store.hasError = true; store.status = "Could not save: \(error.localizedDescription)" }
+        }
     }
 }

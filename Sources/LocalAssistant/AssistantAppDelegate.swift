@@ -2,51 +2,66 @@ import AppKit
 import SwiftUI
 import os
 
-@MainActor final class AssistantAppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
-    private let store = AssistantStore()
-    private let voice = DictationService()
+@MainActor final class AssistantAppDelegate: NSObject, NSApplicationDelegate {
+    let store = AssistantStore()
+    let voice = DictationService()
     private let hotKey = GlobalHotKey()
     private var statusItem: NSStatusItem?
-    private let popover = NSPopover()
+    private var workspaceWindow: NSWindow?
+    private var closeObserver: NSObjectProtocol?
+    private var moveObserver: NSObjectProtocol?
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(.regular)
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "sparkle", accessibilityDescription: Product.name)
-        item.button?.toolTip = "\(Product.name) · Control-Space to dictate"
-        item.button?.target = self; item.button?.action = #selector(togglePopover)
+        if let url = Bundle.main.url(forResource: "MenuBarMark", withExtension: "pdf"), let image = NSImage(contentsOf: url) {
+            image.size = NSSize(width: 19, height: 19); image.isTemplate = true; item.button?.image = image
+        } else { item.button?.image = NSImage(systemSymbolName: "circle.hexagongrid.fill", accessibilityDescription: Product.name) }
+        item.button?.toolTip = "Pebble · Control-Space to dictate"
+        item.button?.target = self; item.button?.action = #selector(toggleWindow)
         statusItem = item
-        popover.behavior = .transient
-        popover.delegate = self
-        popover.contentViewController = NSHostingController(rootView: AssistantRootView(store: store, voice: voice))
         hotKey.onPress = { [weak self] in self?.openAndDictate() }
         let result = hotKey.register()
-        Logger(subsystem: "com.local.LocalAssistant", category: "shortcut").notice("Control-Space registration result: \(result)")
-        store.shortcutStatus = result == noErr ? "⌃Space opens dictation" : "Control-Space unavailable (\(result)). Check Keyboard → Keyboard Shortcuts → Input Sources."
-        showPopover()
-    }
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { showPopover(); return false }
-    @objc private func togglePopover() {
-        if popover.isShown { popover.performClose(nil) } else { showPopover() }
-    }
-    private func showPopover() {
-        guard let button = statusItem?.button else { return }
+        Logger(subsystem: "io.github.cellfade.pebble", category: "shortcut").notice("Control-Space registration result: \(result)")
+        store.shortcutStatus = result == noErr ? "⌃ Space to dictate" : "Shortcut unavailable (\(result)); check Keyboard Shortcuts → Input Sources."
+        if CommandLine.arguments.contains("--appearance-light") { NSApp.appearance = NSAppearance(named: .aqua) }
+        if CommandLine.arguments.contains("--appearance-dark") { NSApp.appearance = NSAppearance(named: .darkAqua) }
+        if CommandLine.arguments.contains("--show-setup") { store.showingSetup = true }
         NSApp.activate(ignoringOtherApps: true)
-        if !popover.isShown { popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY) }
-        popover.contentViewController?.view.window?.makeKey()
     }
+    func bindWindow(_ window: NSWindow) {
+        guard workspaceWindow !== window else { return }
+        workspaceWindow = window
+        window.isMovableByWindowBackground = true
+        window.isReleasedWhenClosed = false
+        window.setFrameAutosaveName("PebbleWorkspaceV3")
+        if let closeObserver { NotificationCenter.default.removeObserver(closeObserver) }
+        closeObserver = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in Task { @MainActor in self?.voice.stop() } }
+        #if DEBUG
+        if let moveObserver { NotificationCenter.default.removeObserver(moveObserver) }
+        moveObserver = NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: window, queue: .main) { notification in
+            if let moved = notification.object as? NSWindow { let frame = moved.frame; Logger(subsystem: "io.github.cellfade.pebble", category: "window").notice("Workspace moved: \(Int(frame.origin.x)),\(Int(frame.origin.y))") }
+        }
+        #endif
+    }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        guard workspaceWindow != nil else { return true }; showWindow(); return false
+    }
+    @objc private func toggleWindow() {
+        if workspaceWindow?.isVisible == true && NSApp.isActive { voice.stop(); workspaceWindow?.orderOut(nil) } else { showWindow() }
+    }
+    private func showWindow() { NSApp.activate(ignoringOtherApps: true); workspaceWindow?.deminiaturize(nil); workspaceWindow?.makeKeyAndOrderFront(nil) }
     private func openAndDictate() {
-        Logger(subsystem: "com.local.LocalAssistant", category: "shortcut").notice("Global shortcut pressed")
-        store.showingSetup = false
-        showPopover()
-        guard !store.busy else { voice.message = "Wait for the current response or cancel it before dictating."; return }
+        Logger(subsystem: "io.github.cellfade.pebble", category: "shortcut").notice("Global shortcut pressed")
+        store.showingSetup = false; showWindow()
+        guard !store.busy else { voice.message = "Wait for the response or cancel it before dictating."; return }
         if voice.recording || voice.preparing { voice.stop(); return }
         let original = store.prompt
         Task { [weak self] in
             guard let self else { return }
-            await self.voice.start { [weak self] transcript in
-            self?.store.prompt = original + (original.isEmpty ? "" : "\n") + transcript
-        } }
+            await self.voice.start { [weak self] transcript in self?.store.prompt = original + (original.isEmpty ? "" : "\n") + transcript }
+        }
     }
-    func popoverDidClose(_ notification: Notification) { voice.stop() }
+    func applicationDidResignActive(_ notification: Notification) { voice.stop() }
     func applicationWillTerminate(_ notification: Notification) { voice.stop(); hotKey.unregister() }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 }
