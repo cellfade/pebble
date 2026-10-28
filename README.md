@@ -80,7 +80,7 @@ See [installation and troubleshooting](docs/INSTALL.md), [distribution](docs/DIS
 ## Product and release
 
 - [Screenshots and interaction demo](docs/MEDIA.md)
-- [Beta release destination](https://github.com/cellfade/pebble/releases/tag/v0.3.0-beta.1) — publication depends on final CI and packaging; developer preview, not notarized
+- [Beta release destination](https://github.com/cellfade/pebble/releases/tag/v0.3.0-beta.1) — published developer preview; CI passed, not notarized
 - [Brand assets: SVG, monochrome mark, icon](docs/brand/README.md)
 - [App Store submission path and remaining gates](docs/APP_STORE.md)
 

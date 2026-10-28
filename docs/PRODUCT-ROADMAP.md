@@ -1,6 +1,6 @@
 # Pebble product roadmap
 
-**Working plan · October 26, 2026 · America/Denver**  
+**Working plan · October 26, 2026 · America/Denver**
 **North Star:** the most understandable, useful local AI workbench on a Mac: fast to reach, explicit about its context, good at small multimodal jobs, and able to take bounded actions that the person can inspect and approve.
 
 This is a prioritized product plan, not a claim that the backlog is implemented. “Beta tonight” means a reliable, labeled prerelease after its acceptance gates pass. It does not mean App Store submission tonight or a promise that every North Star capability belongs in the first build. Actual release status belongs in the release notes and [beta acceptance record](BETA-ACCEPTANCE.md).

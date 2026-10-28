@@ -1,7 +1,7 @@
 # Pebble beta acceptance plan
 
-**Candidate date:** October 26, 2026 (America/Denver)  
-**Purpose:** release a dependable developer beta before attempting Store submission.  
+**Candidate date:** October 26, 2026 (America/Denver)
+**Purpose:** release a dependable developer beta before attempting Store submission.
 **Status:** acceptance plan, not a blanket pass. Fill the run record against the final candidate binary.
 
 ## Release decision

@@ -44,3 +44,9 @@ The final debug app was built and launched after the theme, approval-expiry and 
 All current Swift sources also compiled successfully with `APP_STORE` defined, Swift language version 5, and an arm64 macOS 26 target. This verifies conditional source compilation only; it is not an Xcode archive, provisioning or Organizer validation. The Xcode project has been regenerated to include the new action and clock files and passes plist syntax validation.
 
 The release-mode ZIP `Pebble-0.3.0-arm64-beta.1.zip` was then built, its SHA-256 verified, ZIP integrity checked, and extracted into a temporary directory. The extracted bundle passed strict/deep codesign verification and reported `io.github.cellfade.pebble`, version `0.3.0`. Its signature remains ad hoc; verification is not notarization or fresh-Mac launch evidence.
+
+## Published prerelease
+
+[0.3.0-beta.1](https://github.com/cellfade/pebble/releases/tag/v0.3.0-beta.1) is published as a prerelease, with ZIP, checksum and sampled demo. [Clean-runner CI](https://github.com/cellfade/pebble/actions/runs/40632055769) passed project validation, build, offline checks, beta regression checks and packaging. The tag resolves to `9d209607ecf74706cc34e4dfbf3b867512975567`. GitHub reports the uploaded ZIP SHA-256 `5ef5329dc00611bb255b8199f023fe31570965d40f4fd82544f02ae35a0c7df6`, matching the local verified artifact.
+
+The packaged release was restarted locally and successfully answered an Enter-submitted London clock request. This uses the existing machine permissions/defaults; fresh-Mac acceptance remains open. Milestone 0.3 beta is complete at this developer-preview scope. [Later milestones](https://github.com/cellfade/pebble/milestones) remain open with explicit acceptance criteria; neither the full North Star roadmap nor Store submission is claimed complete.
