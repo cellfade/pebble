@@ -2,13 +2,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mode="${1:-run}"
-case "$mode" in run|--debug|--logs|--telemetry|--verify|--light|--dark|--setup) ;; *) echo "usage: $0 [--debug|--logs|--telemetry|--verify]"; exit 2;; esac
+case "$mode" in run|--debug|--logs|--telemetry|--verify|--light|--dark|--setup|--no-glass) ;; *) echo "usage: $0 [--debug|--logs|--telemetry|--verify]"; exit 2;; esac
 pkill -x LocalAssistant >/dev/null 2>&1 || true
 ./script/build_app.sh debug
 name=$(/usr/libexec/PlistBuddy -c 'Print CFBundleName' Resources/Info.plist)
 bundle="$PWD/dist/$name.app"
 if [[ "$mode" == --debug ]]; then exec lldb -- "$bundle/Contents/MacOS/LocalAssistant"; fi
 case "$mode" in
+--no-glass) open -n "$bundle" --args --appearance-light --no-custom-glass ;;
 --light) open -n "$bundle" --args --appearance-light ;;
 --dark) open -n "$bundle" --args --appearance-dark ;;
 --setup) open -n "$bundle" --args --show-setup ;;

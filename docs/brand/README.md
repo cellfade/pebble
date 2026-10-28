@@ -1,15 +1,35 @@
 # Pebble identity
 
-Selected by the owner: the soft, tilted cobalt companion (concept 01, Pebble). The final product name is Pebble. Peek and the earlier lantern directions are unused explorations.
+The owner selected the simple stone-and-ink character: a small, smooth neutral pebble, two floating black ink-dot eyes, and a single curved ink smile. There is no robot body, visor, antenna, coloured cheek light, or separate face panel. The cobalt robot and Peek directions are historical explorations, not active product artwork.
 
-- `pebble.svg`: editable color vector mark, paths and simple gradients with no embedded raster.
-- `pebble-mono.svg`: currentColor single-ink version.
-- `../../Resources/AppIcon-source.png`: original generated raster icon; built-in image generation was used, then resized mechanically for packaging.
-- `../../Resources/AppIcon.icns`: macOS icon set generated from the raster.
-- `../../Resources/MenuBarMark.pdf`: vector template mark drawn from the same mono silhouette.
+## Canonical assets
 
-Palette: cobalt #2257EB, deep cobalt #1237A3, navy #11264B, cream #FFFAF0, amber #FFB43A. App interface uses system-adaptive surfaces and semantic contrast; cobalt is the active accent, not an opaque wash behind body text. Artwork can be dimensional; the SVG is a deliberately simplified brand rendition rather than an automatic vector trace.
+- `pebble.svg`: editable colour vector mark, with a neutral stone gradient and ink face. It contains real paths rather than embedded raster pixels.
+- `pebble-mono.svg`: single-ink outline and face using `currentColor`.
+- `../../Resources/AppIcon-source.png`: approved 1254×1254 raster master. Built-in image generation created the stone icon; packaging only resizes the approved image mechanically.
+- `../../Resources/AppIcon.png`: 256×256 in-app rendition.
+- `../../Resources/AppIcon.icns`: complete macOS icon set, from 16 pixels through 1024 pixels.
+- `../../Resources/Assets.xcassets/AppIcon.appiconset`: the ten matching Mac App Store/Xcode icon renditions and catalog manifest.
+- `../../Resources/MenuBarMark.pdf`: vector template mark rendered directly from the canonical monochrome SVG. The app treats it as a template so macOS supplies the correct light/dark ink colour.
 
-Rebuild resources with `./script/build_icons.sh`. App Store icon renditions are checked into Resources/Assets.xcassets. Keep those in sync if the source icon changes. The icon character was created as an original design; do not introduce borrowed franchise silhouettes.
+The dimensional raster icon and SVG intentionally differ in finish: the raster has tactile stone and a pale glass tile, while the SVG is a simplified, editable rendition of the same stone silhouette and ink expression. The SVG is not presented as a generated vector trace.
 
-Generation prompt: refine the selected left Pebble concept into one macOS app icon; smooth cobalt pebble/egg body, diagonal warm ceramic face, two navy oval eyes, tiny amber cheek light and feet, no ears/visor/antenna/arms/cube body, pale icy-blue glass rounded-square tile, no text, transparent outside tile. Exact project prompt and the concept boards are retained in the local brand-exploration deliverable.
+## Colour and treatment
+
+The character stays neutral: stone #F4F2EC / #DEDFDC / #BBC6D4 and ink #141619. The approved raster's glass backing carries a restrained cool-blue reflection. Cobalt may remain an interface accent, but the character is no longer a cobalt robot. Keep a real stone silhouette, asymmetrical dot eyes, and one simple smiling stroke. Do not reintroduce robot components or add facial panels.
+
+Use the colour mark on quiet, high-contrast backgrounds. Use the monochrome mark for small navigation, menu bar, print, and accessibility contexts. Native controls and semantic foreground colours determine app text contrast; decorative glass should not reduce legibility.
+
+## Rebuilding and validation
+
+Run:
+
+```sh
+./script/build_icons.sh
+```
+
+The script regenerates the ICNS, 256-pixel in-app image, all ten asset-catalog PNGs and their manifest, and the vector template PDF. The renderer reads `pebble-mono.svg`, so its geometry cannot silently drift from the canonical mark.
+
+Validation checks the PNG/ICNS/PDF signatures, a square master of at least 1024 pixels, the 256-pixel in-app image, and every expected asset-catalog rendition and dimension. Developer previews of the mono mark at 16, 32 and 256 pixels are written to `.build/icons/previews/` on white backgrounds for contrast inspection; those are not the active template assets. The approved raster, its 16/32-pixel renditions, and these vector previews were visually inspected during packaging.
+
+Rebuild the app afterward and take fresh product screenshots. Resource validation does not establish that an already-running app has refreshed its icon cache.

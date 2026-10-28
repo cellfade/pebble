@@ -59,11 +59,12 @@ import SwiftUI
         } catch { stop(); message = "Could not start microphone: \(error.localizedDescription)" }
     }
     func stop() {
+        let wasActive = recording || preparing || sessionID != nil
         sessionID = nil; timeout?.cancel(); timeout = nil
         engine.stop()
         if tapInstalled { engine.inputNode.removeTap(onBus: 0); tapInstalled = false }
         request?.endAudio(); recognition?.cancel(); recognition = nil; request = nil
         recording = false
-        if !preparing { message = "Dictation stopped. Review your text before sending." }
+        if wasActive && !preparing { message = "Dictation stopped. Review your text before sending." }
     }
 }

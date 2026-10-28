@@ -26,12 +26,14 @@ struct AppleModelClient {
         #endif
         return false
     }
-    func chat(prompt: String, rewrite: Bool) async throws -> String {
+    func chat(prompt: String, rewrite: Bool, history: [ConversationTurn] = [], customInstructions: String? = nil) async throws -> String {
         #if canImport(FoundationModels)
         if #available(macOS 26.0, *), Self.isAvailable {
-            let instructions = rewrite ? "Rewrite the user's text clearly and concisely. Preserve meaning. Return only the rewritten text." : "You are Pebble, a helpful and concise on-device assistant. You have no web browsing tools. Do not invent citations or claim web access. Be candid about uncertainty."
+            let instructions = customInstructions ?? (rewrite ? "Rewrite the user's text clearly and concisely. Preserve meaning. Return only the rewritten text." : "You are Pebble, a helpful and concise on-device assistant. You have no web browsing tools. Do not invent citations or claim web access. Be candid about uncertainty. Current system time: \(ISO8601DateFormatter().string(from: Date())). Time zone: \(TimeZone.current.identifier).")
             let session = LanguageModelSession(instructions: instructions)
-            let response = try await session.respond(to: prompt)
+            let context = ConversationTurn.context(history).map { "User: \($0.user)\nAssistant: \($0.assistant)" }.joined(separator: "\n\n")
+            let request = context.isEmpty ? prompt : "Recent conversation for context:\n\(context)\n\nCurrent request:\n\(prompt)"
+            let response = try await session.respond(to: request)
             try Task.checkCancellation()
             return response.content
         }

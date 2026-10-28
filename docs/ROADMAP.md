@@ -12,7 +12,18 @@
 - [x] Repeatable app/ZIP packaging and build CI
 - [x] Public GitHub source
 - [ ] Public preview release
-- [ ] Real application screenshots and demo video
+- [x] Accepted real branded beta screenshots
+- [ ] Publish final interaction demo and align media to the release
+
+## Beta 0.3 · Implemented scope
+- [x] Neutral stone/ink-face identity and editable Figma brand/marketing board
+- [x] Interaction/layout and transactional composer fixes with accepted native captures
+- [x] Bounded recent text context and per-run details; no disk history
+- [x] Deterministic clock/date responses for recognized requests
+- [x] Reviewed approval for Safari search, explicit HTTPS, and a basic Mac summary
+- [ ] Final CI/package verification and prerelease publication
+
+Browser navigation does not read or cite search results. Image generation/editing, persistent memory, unrestricted tools, and autonomous Mac control are outside this beta.
 
 ## Sprint 3 · Public distribution
 - [x] Standalone Apple on-device text engine and sandbox configuration

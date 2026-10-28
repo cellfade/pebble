@@ -17,6 +17,8 @@ jobs:
         run: ./script/build_app.sh debug
       - name: Offline checks
         run: ./script/test_offline.sh
+      - name: Beta regression checks
+        run: ./script/test_beta.sh
       - name: Archive preview
         run: ./script/package.sh
       - uses: actions/upload-artifact@v4

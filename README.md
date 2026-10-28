@@ -2,9 +2,9 @@
 
 **A little help. Close to home.**
 
-A native macOS workspace for Apple’s on-device model and local Ollama models, with a draggable window, cobalt accents, and a small companion of your own. Ask a question, rewrite a sentence, dictate a prompt, or attach an image—without a hosted inference account.
+A native macOS workspace for Apple’s on-device model and local Ollama models, with a draggable window, cobalt accents, and a neutral stone companion with floating ink eyes and a smile. Ask a question, rewrite a sentence, dictate a prompt, or attach an image—without a hosted inference account.
 
-> 0.2.0 developer preview. The downloadable build is Apple silicon and ad hoc signed, not Apple-notarized. Build from source if macOS refuses the downloaded preview. No model weights are included.
+> 0.3.0-beta.1 developer preview. The downloadable build is Apple silicon and ad hoc signed, not Apple-notarized. Build from source if macOS refuses the downloaded preview. No model weights are included.
 
 ## Choose your local engine
 
@@ -26,7 +26,7 @@ A separate `AppStore` Xcode configuration uses only Apple’s on-device engine, 
    For image understanding, optionally add `ollama pull qwen3.5:9b`. Models are separate multi-GB downloads. This app uses a 4096-token context; model download size and useful memory needs vary. A Mac with 16 GB RAM is a practical starting point for the tested 8B/9B models, not a minimum guaranteed for every workload. Keep substantial disk headroom beyond the model files.
 3. **Install this app.** Download a preview from Releases, extract it, and move the app to Applications. See the preview trust limitation above. For the supported source-build path below, run the build command and copy the resulting `.app` from `dist/` to Applications.
 4. **Open the app.** Follow the in-app setup guide and press Check connection. It connects only to `127.0.0.1:11434`.
-5. **Use the workspace.** You can choose Apple on-device when available. Drag the native title bar to move the window or resize it from its edges. **Press Control-Space** The panel opens and starts dictation. Allow microphone and speech recognition only if you want voice input. You can always type instead. Review the text, then press Enter to send.
+5. **Use the workspace.** You can choose Apple on-device when available. Drag the native title bar to move the window or resize it from its edges. **Press Control-Space.** The panel opens and starts dictation. Allow microphone and speech recognition only if you want voice input. You can always type instead. Review the text, then press Enter to send.
 
 If you use the Ollama GUI, keep it running. If you installed the command-line runtime without the GUI or a service, run `ollama serve` in a separate Terminal. Do not start a second server if the endpoint is already available.
 
@@ -49,11 +49,11 @@ The app does not register itself to start at login. Add it in System Settings �
 
 ## What stays local
 
-Inference uses installed local models only. Voice transcription requires on-device speech support for the current language. Unsupported recognizers show guidance instead of switching to network recognition. No chat history is saved by the app.
+Inference uses installed local models only. Text chat retains a bounded recent context in process memory: the last four turns, with each user message capped at 1,200 characters and each answer at 1,800. The session stores at most eight turns. Rewrite and image requests exclude recent chat context; Clear starts a fresh conversation. Voice transcription requires on-device speech support for the current language. Unsupported recognizers show guidance instead of switching to network recognition. No chat history is persisted to disk by the app.
 
-Paste reads the clipboard only when clicked. Search in browser opens an explicit browser search; the app does not fetch pages or generate verified citations. Share and Save are explicit user actions. Ollama's own networking and logs are controlled separately. Read [data flow and privacy](docs/PRIVACY.md).
+Paste reads the clipboard only when clicked. The Actions workspace proposes an exact Safari search, explicit HTTPS link, or basic Mac summary for your approval. Search sends the approved query to DuckDuckGo in Safari. The app does not fetch pages or generate verified citations. Share and Save are explicit user actions. Ollama's own networking and logs are controlled separately. Read [data flow and privacy](docs/PRIVACY.md).
 
-Image attachments are for **understanding**, not image generation/editing. Generation is deferred. Model answers can be wrong, including time conversions, facts, and source claims. Each request is independent; conversation memory and live token streaming are not implemented.
+Image attachments are for **understanding**, not image generation/editing. Generation is deferred. Model answers can be wrong, including facts and source claims. Recognized clock/date requests use this Mac’s system clock and time-zone database rather than a model estimate; supported named zones are bounded. The basic Mac summary reports OS version, logical processor count, physical RAM, free volume storage, and clock data after approval. It does not inspect files, screens, app contents, or processes. Durable memory, a full context tray, and live token streaming are not implemented.
 
 ## Build from source
 
@@ -69,6 +69,7 @@ The result is `dist/Pebble.app`. The app has a normal movable/resizable window a
 
 ```sh
 ./script/test_offline.sh     # no Ollama or model downloads
+./script/test_beta.sh        # clock/context/composer/approval regressions; fake executor
 ./script/test.sh             # live Ollama, qwen3:8b and qwen3.5:9b required
 ./script/doctor.sh           # read-only local connection diagnostics
 ./script/package.sh          # release-mode ZIP + SHA-256 checksum
@@ -79,6 +80,7 @@ See [installation and troubleshooting](docs/INSTALL.md), [distribution](docs/DIS
 ## Product and release
 
 - [Screenshots and interaction demo](docs/MEDIA.md)
+- [Beta release destination](https://github.com/cellfade/pebble/releases/tag/v0.3.0-beta.1) — publication depends on final CI and packaging; developer preview, not notarized
 - [Brand assets: SVG, monochrome mark, icon](docs/brand/README.md)
 - [App Store submission path and remaining gates](docs/APP_STORE.md)
 

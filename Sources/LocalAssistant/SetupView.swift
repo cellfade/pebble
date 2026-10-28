@@ -28,7 +28,7 @@ struct SetupView: View {
                 Label("3. Check your connection", systemImage: "checkmark.circle").font(.headline)
                 Text(store.status).font(.callout).textSelection(.enabled)
                 HStack {
-                    Button(store.checking ? "Checking…" : "Check connection") { Task { await store.refresh() } }.disabled(store.checking)
+                    Button(store.checking ? "Checking…" : "Check Ollama") { store.provider = "Ollama"; Task { await store.refresh() } }.disabled(store.checking)
                     Text("127.0.0.1:11434").font(.caption.monospaced()).foregroundStyle(.secondary)
                 }
             }
@@ -55,13 +55,15 @@ struct AssistantRootView: View {
     @ObservedObject var store: AssistantStore
     @ObservedObject var voice: DictationService
     var body: some View {
-        NavigationSplitView {
+        GeometryReader { viewport in
+        HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 9) { PebbleAvatar(size: 42); VStack(alignment: .leading, spacing: 2) { Text("Pebble").font(.system(size: 20, weight: .semibold, design: .rounded)); Text("YOUR LOCAL COMPANION").font(.system(size: 8, weight: .semibold)).tracking(1).foregroundStyle(.secondary) } }.padding(.horizontal, 16).padding(.top, 20)
                 List(selection: Binding<String?>(get: { store.mode }, set: { if let value = $0 { store.mode = value; store.showingSetup = false } })) {
                     Section("WORKSPACE") {
                         Label("Chat", systemImage: "bubble.left").tag("Ask")
                         Label("Rewrite", systemImage: "text.alignleft").tag("Rewrite")
+                        Label("Actions", systemImage: "checkmark.shield").tag("Actions")
                         if !Product.isAppStoreBuild { Label("Image questions", systemImage: "photo").tag("Images") }
                     }
                 }.listStyle(.sidebar).disabled(store.busy)
@@ -75,11 +77,16 @@ struct AssistantRootView: View {
                     Button { voice.stop(); store.showingSetup = true } label: { Label("Setup & help", systemImage: "gearshape") }.buttonStyle(.plain)
                     Text("v\(Product.version) · Developer preview").font(.caption2).foregroundStyle(.secondary)
                 }.padding(16)
-            }.navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 250)
-        } detail: {
+            }.frame(width: 210).frame(maxHeight: .infinity).background(.regularMaterial)
+            Divider()
+            Group {
             if store.showingSetup { ScrollView { SetupView(store: store).frame(maxWidth: .infinity) }.background(.background) }
+            else if store.mode == "Actions" { ActionCenterView(store: store) }
             else { AssistantView(store: store, voice: voice) }
-        }.tint(.cobalt).frame(minWidth: 860, minHeight: 640)
+            }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }.tint(.cobalt).frame(width: viewport.size.width, height: viewport.size.height).clipped()
+        }.frame(minWidth: 860, minHeight: 640)
+         .preferredColorScheme(store.appearance == "Light" ? .light : store.appearance == "Dark" ? .dark : nil)
          .onChange(of: store.provider) { _, _ in Task { await store.refresh() } }
          .task { await store.refresh() }
     }

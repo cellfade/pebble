@@ -17,7 +17,8 @@ struct AssistantView: View {
             composer
             response
         }
-        .padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(28).frame(maxWidth: 1000, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.background)
         .fileImporter(isPresented: $store.choosingImage, allowedContentTypes: [.png, .jpeg, .heic, .webP]) { result in
             switch result { case .success(let url): Task { store.attach(url); await store.refresh() }; case .failure(let error): store.hasError = true; store.status = error.localizedDescription }
@@ -45,8 +46,8 @@ struct AssistantView: View {
                 Spacer()
                 Text("Enter ↵ to send").font(.caption).foregroundStyle(.secondary)
             }
-            PromptEditor(text: $store.prompt, editable: !store.busy && !voice.recording && !voice.preparing, onSubmit: submit)
-                .frame(minHeight: 110, idealHeight: 140, maxHeight: 170)
+            PromptEditor(text: Binding(get: { store.busy && !store.pendingPrompt.isEmpty ? store.pendingPrompt : store.prompt }, set: { store.prompt = $0 }), editable: !store.busy && !voice.recording && !voice.preparing, onSubmit: submit)
+                .frame(minHeight: 80, idealHeight: 110, maxHeight: 140)
                 .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.quaternary, lineWidth: 1))
             if let attachment = store.attachment {
@@ -84,6 +85,9 @@ struct AssistantView: View {
                 Spacer()
                 if !store.busy && !store.answer.isEmpty { Text(store.status).font(.caption).foregroundStyle(.secondary) }
             }
+            if !store.lastPrompt.isEmpty {
+                Text("You: " + store.lastPrompt).font(.callout).foregroundStyle(.secondary).lineLimit(3).textSelection(.enabled)
+            }
             if store.busy {
                 HStack(spacing: 12) {
                     ProgressView().controlSize(.small).accessibilityLabel("Waiting for AI response")
@@ -105,21 +109,27 @@ struct AssistantView: View {
                     Text(store.answer).font(.system(size: 15)).lineSpacing(4).textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading).accessibilityLabel("AI response").accessibilityValue(store.answer).padding(4)
                 }
-            }.frame(minHeight: 110, maxHeight: .infinity)
+            }.frame(minHeight: 60, maxHeight: .infinity)
+            if let receipt = store.lastReceipt {
+                DisclosureGroup("Run details · " + receipt.engine) {
+                    Text("Model: \(receipt.model)\nText: \(receipt.inputCharacters) characters · Image: \(receipt.includedImage ? "included" : "none")\nRecent context: \(receipt.contextTurns) shortened turns · Web pages read: none\nSession stays in memory until Clear or Quit.").font(.caption).foregroundStyle(.secondary).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                }.font(.caption)
+            }
             HStack(spacing: 12) {
                 Button { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(store.answer, forType: .string); store.copied = true } label: { Label(store.copied ? "Copied" : "Copy", systemImage: "doc.on.doc") }
                     .keyboardShortcut("c", modifiers: [.command, .shift]).disabled(store.answer.isEmpty || store.busy).help("Copy response (Command-Shift-C)")
                 ShareLink(item: store.answer) { Label("Share", systemImage: "square.and.arrow.up") }.disabled(store.answer.isEmpty || store.busy)
                 Menu {
-                    Button("Copy prompt") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(store.prompt, forType: .string) }.disabled(store.prompt.isEmpty)
+                    Button("Copy last request") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(store.lastPrompt, forType: .string) }.disabled(store.lastPrompt.isEmpty)
                     Button("Save response…") { saveResponse() }.disabled(store.answer.isEmpty || store.busy)
-                    Button("Search prompt in browser") { search() }.disabled(store.prompt.isEmpty)
+                    Button("Review Safari search…") { search() }.disabled(store.prompt.isEmpty && store.lastPrompt.isEmpty)
+                    Picker("Appearance", selection: $store.appearance) { Text("Use system").tag("System"); Text("Light").tag("Light"); Text("Dark").tag("Dark") }
                     Divider()
                     Button("Setup & installation…") { voice.stop(); store.showingSetup = true }
                     Button("About Pebble") { NSApplication.shared.orderFrontStandardAboutPanel(nil) }
                 } label: { Label("More", systemImage: "ellipsis") }.fixedSize()
                 Spacer()
-                Button("Clear") { voice.stop(); store.prompt = ""; store.answer = ""; store.attachment = nil; store.copied = false }.disabled(store.busy || voice.preparing)
+                Button("Clear") { voice.stop(); store.clearConversation() }.disabled(store.busy || voice.preparing)
             }.controlSize(.regular)
         }
     }
@@ -129,9 +139,8 @@ struct AssistantView: View {
         store.prompt += (store.prompt.isEmpty ? "" : "\n") + text
     }
     private func search() {
-        var url = URLComponents(string: "https://duckduckgo.com/")!
-        url.queryItems = [URLQueryItem(name: "q", value: store.prompt)]
-        if let destination = url.url { NSWorkspace.shared.open(destination) }
+        let text = store.prompt.isEmpty ? store.lastPrompt : store.prompt
+        store.mode = "Actions"; store.actionDraft = text; store.propose(kind: .searchSafari, value: text)
     }
     private func saveResponse() {
         let panel = NSSavePanel(); panel.allowedContentTypes = [.plainText]; panel.nameFieldStringValue = "Pebble response.txt"
