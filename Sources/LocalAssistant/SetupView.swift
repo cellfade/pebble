@@ -37,11 +37,12 @@ struct SetupView: View {
             Text("⌃Space opens dictation · Enter sends · Shift-Enter adds a line").font(.caption)
             Text("Microphone and Speech Recognition permissions are requested only when you choose dictation. Speech stays on-device when supported. Browser search and Share are explicit actions.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
-                Text("macOS 14+ · Apple silicon recommended").font(.caption).foregroundStyle(.secondary)
+                Text(Product.isAppStoreBuild ? "macOS 26+ · Apple Intelligence required" : "macOS 14+ · Apple silicon recommended").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button("Continue") { store.finishSetup() }.buttonStyle(.borderedProminent)
             }
-        }.padding(24).frame(width: 470).task { await store.refresh() }
+            HStack { Link("Privacy policy ↗", destination: Product.privacyURL); Link("Support ↗", destination: Product.supportURL) }.font(.caption)
+        }.padding(24).frame(maxWidth: 470).task { await store.refresh() }
     }
     private func command(_ text: String) -> some View {
         HStack {
@@ -59,7 +60,7 @@ struct AssistantRootView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 9) { PebbleAvatar(size: 42); VStack(alignment: .leading, spacing: 2) { Text("Pebble").font(.system(size: 20, weight: .semibold, design: .rounded)); Text("YOUR LOCAL COMPANION").font(.system(size: 8, weight: .semibold)).tracking(1).foregroundStyle(.secondary) } }.padding(.horizontal, 16).padding(.top, 20)
-                List(selection: Binding<String?>(get: { store.mode }, set: { if let value = $0 { store.mode = value; store.showingSetup = false } })) {
+                List(selection: Binding<String?>(get: { store.mode }, set: { if let value = $0 { voice.stop(); store.mode = value; store.showingSetup = false } })) {
                     Section("WORKSPACE") {
                         Label("Chat", systemImage: "bubble.left").tag("Ask")
                         Label("Rewrite", systemImage: "text.alignleft").tag("Rewrite")
@@ -75,7 +76,7 @@ struct AssistantRootView: View {
                     Text(store.shortcutStatus).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     Divider()
                     Button { voice.stop(); store.showingSetup = true } label: { Label("Setup & help", systemImage: "gearshape") }.buttonStyle(.plain)
-                    Text("v\(Product.version) · Developer preview").font(.caption2).foregroundStyle(.secondary)
+                    Text("v\(Product.version) · \(Product.editionLabel)").font(.caption2).foregroundStyle(.secondary)
                 }.padding(16)
             }.frame(width: 210).frame(maxHeight: .infinity).background(.regularMaterial)
             Divider()
@@ -87,6 +88,8 @@ struct AssistantRootView: View {
         }.tint(.cobalt).frame(width: viewport.size.width, height: viewport.size.height).clipped()
         }.frame(minWidth: 860, minHeight: 640)
          .preferredColorScheme(store.appearance == "Light" ? .light : store.appearance == "Dark" ? .dark : nil)
+         .onChange(of: store.busy) { _, busy in if busy { voice.stop() } }
+         .onChange(of: store.showingSetup) { _, showing in if showing { voice.stop() } }
          .onChange(of: store.provider) { _, _ in Task { await store.refresh() } }
          .task { await store.refresh() }
     }

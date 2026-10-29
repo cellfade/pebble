@@ -5,7 +5,7 @@ struct ActionCenterView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 14) { PebbleAvatar(size: 60); VStack(alignment: .leading, spacing: 4) { Text("A little help, with your say.").font(.system(size: 25, weight: .semibold, design: .rounded)); Text("Plan locally. Review exactly. Approve one action.").foregroundStyle(.secondary) } }
-                Text("This beta can open Safari searches, open explicit HTTPS links, and read a basic Mac summary. It cannot read your screen, browse results, run terminal commands, control other apps, or send messages.").font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text("Pebble can open Safari searches, open explicit HTTPS links, and read a basic Mac summary. It cannot read your screen, browse results, run terminal commands, control other apps, or send messages.").font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("ASK FOR AN ACTION").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     TextEditor(text: $store.actionDraft).scrollContentBackground(.hidden).frame(height: 90).padding(8).background(.quaternary, in: RoundedRectangle(cornerRadius: 12)).accessibilityLabel("Action request").disabled(store.busy)

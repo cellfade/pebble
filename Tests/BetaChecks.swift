@@ -85,6 +85,14 @@ private final class ModelRecorder {
         try require(context.first?.user.hasPrefix("U5") == true && context.last?.user.hasPrefix("U8") == true, "Context must retain the most recent turns in order")
         try require(context.allSatisfy { $0.user.count <= 1200 && $0.assistant.count <= 1800 }, "Per-turn context bounds were exceeded")
         try require(ConversationTurn.context([]).isEmpty, "Empty conversation must have empty context")
+        try rejects("Oversized multilingual prompt must fail without truncation") { try RequestBudget.validate(String(repeating: "石", count: 1000)) }
+        try RequestBudget.validate("A short useful question")
+        let largePrompt = String(repeating: "x", count: 2048)
+        let fitted = ConversationTurn.context(turns, prompt: largePrompt)
+        try require(fitted.reduce(largePrompt.utf8.count) { $0 + $1.user.utf8.count + $1.assistant.utf8.count } <= 2304, "Combined current request and context exceeded local input budget")
+        let emoji = ConversationTurn.context([.init(user: String(repeating: "🪨", count: 300), assistant: String(repeating: "ありがとう", count: 300))])
+        try require(emoji.allSatisfy { !$0.user.contains("�") && !$0.assistant.contains("�") }, "Budgeting damaged Unicode")
+
     }
 
     private static func actionValidationChecks() throws {
@@ -128,6 +136,8 @@ private final class ModelRecorder {
     @MainActor private static func composerChecks() async throws {
         let model = ModelRecorder()
         let value = store(model)
+        var stoppedVoice = 0
+        value.onBeginOperation = { stoppedVoice += 1 }
         value.prompt = "First question"
         value.send()
         try require(value.prompt.isEmpty && value.busy, "Submitting must consume only the draft and start one run")
@@ -148,6 +158,12 @@ private final class ModelRecorder {
         try require(value.prompt.isEmpty && value.answer.isEmpty && value.lastPrompt.isEmpty && value.history.isEmpty && value.lastReceipt == nil, "Clear did not reset the conversation/session result")
         value.prompt = "Fresh task"; value.send(); try await idle(value)
         try require(model.calls.last?.history.isEmpty == true, "Clear leaked old conversation context into a new task")
+
+        try require(stoppedVoice > 0, "Model operations must stop voice before dispatch")
+        let oversized = String(repeating: "石", count: 1000)
+        value.prompt = oversized; let previousCallCount = model.calls.count
+        value.send()
+        try require(value.prompt == oversized && !value.busy && model.calls.count == previousCallCount, "Over-budget prompt was truncated or dispatched instead of preserving draft")
 
         let previousAnswer = value.answer
         let previousPrompt = value.lastPrompt

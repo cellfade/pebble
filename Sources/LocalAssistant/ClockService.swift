@@ -23,11 +23,39 @@ struct ClockService {
         return lines.joined(separator: "\n\n")
     }
 }
+// Conservative UTF-8 budgets reserve room for instructions, message framing and output.
+// They are not a tokenizer estimate. Oversized current requests fail intact.
+enum RequestBudget {
+    static let maximumPromptBytes = 2048
+    static let combinedTextBytes = 2304
+    static func validate(_ prompt: String) throws {
+        guard prompt.utf8.count <= maximumPromptBytes else {
+            throw NSError(domain: "PebbleInput", code: 1, userInfo: [NSLocalizedDescriptionKey: "This request is too long for the local context budget (2 KB of text). Shorten it or split it into smaller requests. Your draft is unchanged."])
+        }
+    }
+    static func prefix(_ text: String, bytes limit: Int) -> String {
+        var result = "", used = 0
+        for character in text {
+            let size = String(character).utf8.count
+            guard used + size <= limit else { break }
+            result.append(character); used += size
+        }
+        return result
+    }
+}
 struct ConversationTurn: Equatable {
     let user: String
     let assistant: String
-    static func context(_ turns: [ConversationTurn]) -> [ConversationTurn] {
-        Array(turns.suffix(4)).map { .init(user: String($0.user.prefix(1200)), assistant: String($0.assistant.prefix(1800))) }
+    static func context(_ turns: [ConversationTurn], prompt: String = "") -> [ConversationTurn] {
+        var available = max(0, RequestBudget.combinedTextBytes - prompt.utf8.count)
+        var selected: [ConversationTurn] = []
+        for turn in turns.suffix(4).reversed() {
+            let shortened = Self(user: RequestBudget.prefix(turn.user, bytes: 192), assistant: RequestBudget.prefix(turn.assistant, bytes: 320))
+            let size = shortened.user.utf8.count + shortened.assistant.utf8.count
+            guard size <= available else { break }
+            selected.append(shortened); available -= size
+        }
+        return selected.reversed()
     }
 }
 struct RunReceipt {

@@ -103,7 +103,7 @@ struct AssistantView: View {
                     VStack(spacing: 8) {
                         Image(systemName: "bubble.left.and.text.bubble.right").font(.system(size: 28)).foregroundStyle(Color.cobalt.opacity(0.7)).accessibilityHidden(true)
                         Text(store.busy ? "Making room for a good answer." : "Ready when you are.").font(.headline)
-                        Text(store.busy ? "You can cancel at any time." : "Start with a question, a rough draft, or an image.").font(.callout).foregroundStyle(.secondary)
+                        Text(store.busy ? "You can cancel at any time." : (Product.isAppStoreBuild ? "Start with a question or a rough draft." : "Start with a question, a rough draft, or an image.")).font(.callout).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity).padding(.vertical, 30)
                 } else {
                     Text(store.answer).font(.system(size: 15)).lineSpacing(4).textSelection(.enabled)
@@ -112,7 +112,7 @@ struct AssistantView: View {
             }.frame(minHeight: 60, maxHeight: .infinity)
             if let receipt = store.lastReceipt {
                 DisclosureGroup("Run details · " + receipt.engine) {
-                    Text("Model: \(receipt.model)\nText: \(receipt.inputCharacters) characters · Image: \(receipt.includedImage ? "included" : "none")\nRecent context: \(receipt.contextTurns) shortened turns · Web pages read: none\nSession stays in memory until Clear or Quit.").font(.caption).foregroundStyle(.secondary).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Model: \(receipt.model)\nText: \(receipt.inputCharacters) characters · Image: \(receipt.includedImage ? "included" : "none")\nRecent context: \(receipt.contextTurns) budgeted turns · Web pages read: none\nSession stays in memory until Clear or Quit.").font(.caption).foregroundStyle(.secondary).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                 }.font(.caption)
             }
             HStack(spacing: 12) {
@@ -126,6 +126,8 @@ struct AssistantView: View {
                     Picker("Appearance", selection: $store.appearance) { Text("Use system").tag("System"); Text("Light").tag("Light"); Text("Dark").tag("Dark") }
                     Divider()
                     Button("Setup & installation…") { voice.stop(); store.showingSetup = true }
+                    Link("Privacy policy ↗", destination: Product.privacyURL)
+                    Link("Support ↗", destination: Product.supportURL)
                     Button("About Pebble") { NSApplication.shared.orderFrontStandardAboutPanel(nil) }
                 } label: { Label("More", systemImage: "ellipsis") }.fixedSize()
                 Spacer()
@@ -139,16 +141,18 @@ struct AssistantView: View {
         store.prompt += (store.prompt.isEmpty ? "" : "\n") + text
     }
     private func search() {
+        voice.stop()
         let text = store.prompt.isEmpty ? store.lastPrompt : store.prompt
         store.mode = "Actions"; store.actionDraft = text; store.propose(kind: .searchSafari, value: text)
     }
     private func saveResponse() {
+        let responseToSave = store.answer
         let panel = NSSavePanel(); panel.allowedContentTypes = [.plainText]; panel.nameFieldStringValue = "Pebble response.txt"
         panel.begin { result in
             guard result == .OK, let url = panel.url else { return }
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            do { try store.answer.write(to: url, atomically: true, encoding: .utf8) }
+            do { try responseToSave.write(to: url, atomically: true, encoding: .utf8) }
             catch { store.hasError = true; store.status = "Could not save: \(error.localizedDescription)" }
         }
     }

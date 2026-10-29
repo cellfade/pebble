@@ -12,6 +12,7 @@ import os
     private var moveObserver: NSObjectProtocol?
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        store.onBeginOperation = { [weak self] in self?.voice.stop() }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let url = Bundle.main.url(forResource: "MenuBarMark", withExtension: "pdf"), let image = NSImage(contentsOf: url) {
             image.size = NSSize(width: 19, height: 19); image.isTemplate = true; item.button?.image = image
@@ -55,6 +56,7 @@ import os
         store.showingSetup = false; showWindow()
         guard !store.busy else { voice.message = "Wait for the response or cancel it before dictating."; return }
         if voice.recording || voice.preparing { voice.stop(); return }
+        if store.mode == "Actions" { store.mode = "Ask" }
         let original = store.prompt
         Task { [weak self] in
             guard let self else { return }

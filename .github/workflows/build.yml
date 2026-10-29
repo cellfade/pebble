@@ -27,3 +27,20 @@ jobs:
           path: |
             dist/*.zip
             dist/*.sha256
+
+  store-archive:
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Store toolchain
+        run: xcodebuild -version
+      - name: Archive unsigned Store candidate
+        run: ./script/validate_store_archive.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-store-validation
+          path: |
+            dist/store-archive-validation.json
+            dist/Pebble-Unsigned.xcarchive

@@ -17,10 +17,12 @@ final class MockProtocol: URLProtocol {
             payload = Self.mode == "showRemote" ? ["remote_model": "cloud"] : ["capabilities": ["completion"]]
         case "/api/chat":
             if Self.mode == "httpError" { status = 500 }
+            if Self.mode == "redirect307" { status = 307 }
+            if Self.mode == "redirect308" { status = 308 }
             payload = ["message": ["content": "CHECK_OK"], "done_reason": "stop"]
         default: status = 404
         }
-        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type":"application/json"])!
+        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type":"application/json", "Location":"https://example.invalid/collect"])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: try! JSONSerialization.data(withJSONObject: payload))
         client?.urlProtocolDidFinishLoading(self)
@@ -41,7 +43,7 @@ final class MockProtocol: URLProtocol {
         let client = OllamaClient(session: URLSession(configuration: config))
         let answer = try await client.chat(model: "test:local", prompt: "test", rewrite: false)
         guard answer == "CHECK_OK" else { fatalError("Local request failed") }
-        for mode in ["remote", "showRemote", "httpError"] {
+        for mode in ["remote", "showRemote", "httpError", "redirect307", "redirect308"] {
             MockProtocol.mode = mode
             var refused = false
             do { _ = try await client.chat(model: "test:local", prompt: "test", rewrite: false) } catch { refused = true }
@@ -51,6 +53,23 @@ final class MockProtocol: URLProtocol {
         var refused = false
         do { _ = try await client.chat(model: "test:local", prompt: "test", rewrite: false, image: Data([1])) } catch { refused = true }
         guard refused else { fatalError("Nonvision model accepted an image") }
-        print("PASS: Enter/newline/composition, remote metadata, loopback-only destination, local chat, HTTP failure, nonvision refusal")
+        // Exercise the exact per-task delegate installed for injected and production sessions.
+        // These redirect requests contain synthetic secrets and must never be forwarded.
+        let policySession = URLSession(configuration: .ephemeral)
+        let task = policySession.dataTask(with: URL(string: "http://127.0.0.1:11434/api/chat")!)
+        for status in [307, 308] {
+            let response = HTTPURLResponse(url: task.originalRequest!.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Location": "https://example.invalid/collect"])!
+            var redirected = URLRequest(url: URL(string: "https://example.invalid/collect")!)
+            redirected.httpMethod = "POST"
+            redirected.httpBody = Data("synthetic-private-prompt-and-image".utf8)
+            var called = false
+            LocalInferenceRedirectPolicy.shared.urlSession(policySession, task: task, willPerformHTTPRedirection: response, newRequest: redirected) { accepted in
+                guard accepted == nil else { fatalError("Redirect forwarded inference payload") }
+                called = true
+            }
+            guard called else { fatalError("Redirect decision was not completed") }
+        }
+        policySession.invalidateAndCancel()
+        print("PASS: Enter/newline/composition, remote metadata, loopback-only destination, rejected 307/308 redirects, local chat, HTTP failure, nonvision refusal")
     }
 }
