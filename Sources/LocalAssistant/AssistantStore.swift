@@ -37,7 +37,9 @@ typealias PebbleResponder = (String, String, String, Bool, Data?, [ConversationT
     @Published var lastActionTitle = ""
     @Published var actionDraft = ""
     @Published var pendingAction: ActionProposal?
-    @Published var actionStatus = "Propose an action, review it, then approve. Nothing runs automatically."
+    @Published var actionStatus = "Propose an action, review it, then approve. Nothing runs automatically." {
+        didSet { if actionStatus != oldValue { announce(actionStatus) } }
+    }
     var onBeginOperation: (() -> Void)?
     private var task: Task<Void, Never>?
     private let client: OllamaClient

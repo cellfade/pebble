@@ -1,5 +1,7 @@
 # Data flow and privacy
 
+The Mac App Store edition uses Apple’s on-device Foundation Models engine only. It does not require Ollama, collect developer analytics, or include a network-client entitlement. The optional Ollama/image path described below applies to the direct-download edition. Browser navigation, support/privacy links, and sharing are explicit user actions handled by macOS or the selected browser/service.
+
 For the Ollama engine, text and selected images go to an installed model through http://127.0.0.1:11434. The app rejects cloud model names and remote-model metadata, ignores configured proxies for inference, refuses HTTP redirects before forwarding payloads, and has no hosted inference fallback. This is a local client boundary, not a network sandbox for Ollama. Ollama can independently check updates, download models, or use its configured cloud features. Review its settings if you need an offline environment.
 
 Dictation requests Apple on-device speech recognition only after checking platform support. Unsupported languages/recognizers report an error instead of using network speech recognition. Microphone and Speech Recognition access are requested only when the user starts recording. Closing the panel stops capture. No audio recordings are saved by this app.

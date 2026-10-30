@@ -9,11 +9,6 @@ struct AssistantView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             header
-            if store.hasError {
-                Label(store.status, systemImage: "exclamationmark.triangle")
-                    .font(.callout).padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 12)).textSelection(.enabled)
-            }
             composer
             response
         }
@@ -83,38 +78,14 @@ struct AssistantView: View {
             HStack {
                 Text("PEBBLE’S RESPONSE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
-                if !store.busy && !store.answer.isEmpty { Text(store.status).font(.caption).foregroundStyle(.secondary) }
+                if !store.busy && !store.answer.isEmpty && !store.hasError { Text(store.status).font(.caption).foregroundStyle(.secondary) }
             }
-            if !store.lastPrompt.isEmpty {
-                Text("You: " + store.lastPrompt).font(.callout).foregroundStyle(.secondary).lineLimit(3).textSelection(.enabled)
-            }
-            if store.busy {
-                HStack(spacing: 12) {
-                    ProgressView().controlSize(.small).accessibilityLabel("Waiting for AI response")
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Pebble is thinking…").font(.callout.weight(.medium))
-                        TimelineView(.periodic(from: .now, by: 1)) { context in Text("On your Mac · \(max(0, Int(context.date.timeIntervalSince(store.startedAt ?? context.date))))s elapsed").font(.caption).foregroundStyle(.secondary) }.accessibilityHidden(true)
-                    }
-                    Spacer()
-                }.padding(14).modifier(PebbleGlass())
-            }
-            ScrollView {
-                if store.answer.isEmpty {
-                    VStack(spacing: 8) {
-                        Image(systemName: "bubble.left.and.text.bubble.right").font(.system(size: 28)).foregroundStyle(Color.cobalt.opacity(0.7)).accessibilityHidden(true)
-                        Text(store.busy ? "Making room for a good answer." : "Ready when you are.").font(.headline)
-                        Text(store.busy ? "You can cancel at any time." : (Product.isAppStoreBuild ? "Start with a question or a rough draft." : "Start with a question, a rough draft, or an image.")).font(.callout).foregroundStyle(.secondary)
-                    }.frame(maxWidth: .infinity).padding(.vertical, 30)
-                } else {
-                    Text(store.answer).font(.system(size: 15)).lineSpacing(4).textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading).accessibilityLabel("AI response").accessibilityValue(store.answer).padding(4)
-                }
+            ScrollViewReader { scroll in
+                ScrollView { responseContent.id("response-top") }
+                    .onChange(of: store.busy) { _, busy in if busy { scroll.scrollTo("response-top", anchor: .top) } }
+                    .onChange(of: store.status) { _, _ in if store.hasError { scroll.scrollTo("response-top", anchor: .top) } }
+                    .onChange(of: store.answer) { _, _ in scroll.scrollTo("response-top", anchor: .top) }
             }.frame(minHeight: 60, maxHeight: .infinity)
-            if let receipt = store.lastReceipt {
-                DisclosureGroup("Run details · " + receipt.engine) {
-                    Text("Model: \(receipt.model)\nText: \(receipt.inputCharacters) characters · Image: \(receipt.includedImage ? "included" : "none")\nRecent context: \(receipt.contextTurns) budgeted turns · Web pages read: none\nSession stays in memory until Clear or Quit.").font(.caption).foregroundStyle(.secondary).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-                }.font(.caption)
-            }
             HStack(spacing: 12) {
                 Button { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(store.answer, forType: .string); store.copied = true } label: { Label(store.copied ? "Copied" : "Copy", systemImage: "doc.on.doc") }
                     .keyboardShortcut("c", modifiers: [.command, .shift]).disabled(store.answer.isEmpty || store.busy).help("Copy response (Command-Shift-C)")
@@ -134,6 +105,44 @@ struct AssistantView: View {
                 Button("Clear") { voice.stop(); store.clearConversation() }.disabled(store.busy || voice.preparing)
             }.controlSize(.regular)
         }
+    }
+    // Variable-height content shares one scroll region; window chrome and actions stay fixed.
+    private var responseContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if store.hasError {
+                Label(store.status, systemImage: "exclamationmark.triangle")
+                    .font(.callout).padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 12)).textSelection(.enabled)
+            }
+            if !store.lastPrompt.isEmpty {
+                Text("You: " + store.lastPrompt).font(.callout).foregroundStyle(.secondary).lineLimit(3).textSelection(.enabled)
+            }
+            if store.busy {
+                HStack(spacing: 12) {
+                    ProgressView().controlSize(.small).accessibilityLabel("Waiting for AI response")
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Pebble is thinking…").font(.callout.weight(.medium))
+                        TimelineView(.periodic(from: .now, by: 1)) { context in Text("On your Mac · \(max(0, Int(context.date.timeIntervalSince(store.startedAt ?? context.date))))s elapsed").font(.caption).foregroundStyle(.secondary) }.accessibilityHidden(true)
+                    }
+                    Spacer()
+                }.padding(14).modifier(PebbleGlass())
+            }
+            if store.answer.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "bubble.left.and.text.bubble.right").font(.system(size: 28)).foregroundStyle(Color.cobalt.opacity(0.7)).accessibilityHidden(true)
+                    Text(store.busy ? "Making room for a good answer." : "Ready when you are.").font(.headline)
+                    Text(store.busy ? "You can cancel at any time." : (Product.isAppStoreBuild ? "Start with a question or a rough draft." : "Start with a question, a rough draft, or an image.")).font(.callout).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity).padding(.vertical, 30)
+            } else {
+                Text(store.answer).font(.system(size: 15)).lineSpacing(4).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading).accessibilityLabel("AI response").accessibilityValue(store.answer).padding(4)
+            }
+            if let receipt = store.lastReceipt {
+                DisclosureGroup("Run details · " + receipt.engine) {
+                    Text("Model: \(receipt.model)\nText: \(receipt.inputCharacters) characters · Image: \(receipt.includedImage ? "included" : "none")\nRecent context: \(receipt.contextTurns) budgeted turns · Web pages read: none\nSession stays in memory until Clear or Quit.").font(.caption).foregroundStyle(.secondary).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                }.font(.caption)
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func paste() {
         voice.stop()
