@@ -1,13 +1,7 @@
 import SwiftUI
 import AppKit
 extension Color {
-    static var onCobalt: Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.04, green: 0.06, blue: 0.12, alpha: 1)
-                : NSColor.white
-        })
-    }
+    static let cobaltButton = Color(red: 0.14, green: 0.31, blue: 0.93)
     static var cobalt: Color {
         Color(nsColor: NSColor(name: nil) { appearance in
             appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
