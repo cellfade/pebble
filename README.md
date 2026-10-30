@@ -4,7 +4,7 @@
 
 A native macOS workspace for Apple’s on-device model and local Ollama models, with a draggable window, cobalt accents, and a neutral stone companion with floating ink eyes and a smile. Ask a question, rewrite a sentence, dictate a prompt, or attach an image—without a hosted inference account.
 
-> 0.3.0-beta.1 developer preview. The downloadable build is Apple silicon and ad hoc signed, not Apple-notarized. Build from source if macOS refuses the downloaded preview. No model weights are included.
+> 0.3.0-beta.2 developer preview. The downloadable build is Apple silicon and ad hoc signed, not Apple-notarized. Build from source if macOS refuses the downloaded preview. No model weights are included.
 
 ## Choose your local engine
 
@@ -80,10 +80,12 @@ See [installation and troubleshooting](docs/INSTALL.md), [distribution](docs/DIS
 ## Product and release
 
 - [Screenshots and interaction demo](docs/MEDIA.md)
-- [Beta release destination](https://github.com/cellfade/pebble/releases/tag/v0.3.0-beta.1) — published developer preview; CI passed, not notarized
+- [Beta release destination](https://github.com/cellfade/pebble/releases/tag/v0.3.0-beta.2) — published developer preview; CI passed, not notarized
 - [Brand assets: SVG, monochrome mark, icon](docs/brand/README.md)
 - [App Store submission path and remaining gates](docs/APP_STORE.md)
 
 ## Status
+
+[Three-pass quality gate](docs/QUALITY-GATE.md): source review 8.0/10, observed UX/UAT 7.9/10, Store readiness 6.1/10. The full 8/10 gate is not met; review iterations stopped after three. The beta contains the verified fixes, with remaining manual and model-quality limits documented.
 
 Built and tested as a macOS developer preview. Control-Space registration succeeds, but physical dispatch from another app still needs acceptance testing on additional machines. First-launch privacy permissions, unsupported speech languages, VoiceOver, high contrast, and Intel builds need broader coverage. A Developer ID/notarized distribution requires the maintainer's Apple credentials; they are never included here.

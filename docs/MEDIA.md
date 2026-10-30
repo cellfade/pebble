@@ -1,5 +1,7 @@
 # Beta media evidence
 
+Latest candidate: [three-pass review](QUALITY-GATE.md) and [actual Store-configuration capture at 1280×800](media/quality/pass3-16-store-response-1280x800.png). The sequence below records beta1 and is retained as historical media.
+
 The seven screenshots below are genuine captures of the running Pebble v0.3.0-beta.1 app using the approved stone-and-ink identity. They show synthetic test content. Every listed capture was opened and visually inspected for layout and accidental private content; no private conversation, file path, account identity, or secret was visible.
 
 | Capture | Observed state |

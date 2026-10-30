@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.2
+
+- Reject inference redirects; conservatively budget local request/context text without losing oversized drafts.
+- Coordinate dictation with actions and model work; save a stable response snapshot.
+- Keep compact response/error/receipt content within a shared scroll region and maintain readable light/dark controls.
+- Add Apple-only Store copy, privacy/support links, actual unsigned Xcode archive CI and submission drafts.
+- Three-pass review ended at source 8.0, UX 7.9 and Store readiness 6.1. Full 8/10 gate is not met; no Store submission performed.
+
 ## 0.3.0-beta.1 — Developer preview
 
 - Approved Pebble stone identity with floating ink eyes and a smiling line; cobalt remains the interface accent.

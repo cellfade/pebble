@@ -39,7 +39,7 @@ Every saved file above was reopened and visually inspected. The light expanded c
 - Setup opened inside its own intentional scroll region rather than pushing the workspace. A later setup scroll-to-Continue check was interrupted by the computer-use service's app-change guard and is not claimed complete.
 - Existing native window movement was observed in the app's debug window events; no change to title-bar drag behavior was required for the clipping fix.
 
-## Remaining UAT / UX findings
+## Historical pre-integration findings
 
 - **P1, parent integration:** error/approval states and the new Actions surface must be rechecked after the backend/action changes land. Current screenshots do not validate those new flows.
 - **P1, parent integration:** separate user prompts instead of concatenating repeated typed questions, and show a clear bounded conversation context policy. The current model cannot be expected to read system clock or device information without an explicit tool path.
@@ -62,3 +62,7 @@ The backend and approval surface changed after these captures. Retest the final 
 - Capture the final stone-and-ink build in light/dark, normal/minimum/expanded sizes, after interaction, with both approval and error states.
 
 Read-only frontend inspection found no obvious P0 approval bypass. Runtime approval execution and stale-request rejection require the final integration test.
+
+## Current three-pass quality cycle — 29 October 2026
+
+The historical findings above are retained as the investigation record. Current source/tests address request boundaries, authoritative clock output, inactive dictation status, explicit Ollama refresh, one-shot approval validation, and bounded approval bodies. Pass2 reproduced a separate combined compact-window error/expanded-receipt overflow. Pass3 places all variable response content in one scroll region with fixed header, composer and action row, and scrolls new run/error/output feedback into view. Current evidence and unresolved manual gates are recorded in `quality/PASS-3-UX.md`, `quality/PASS-3-CODE.md` and `quality/PASS-3-STORE.md`; do not infer a blanket pass from the earlier screenshots.
