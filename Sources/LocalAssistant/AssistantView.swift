@@ -67,7 +67,7 @@ struct AssistantView: View {
                     if !Product.isAppStoreBuild { Button { store.choosingImage = true } label: { Image(systemName: "photo.badge.plus") }.accessibilityLabel("Attach image").help("Attach an image for local vision analysis").disabled(store.busy) }
                     Spacer()
                     if store.busy { Button("Cancel") { store.cancel() }.keyboardShortcut(.cancelAction) }
-                    else { Button(action: submit) { Label(store.mode == "Rewrite" ? "Rewrite" : "Send", systemImage: "arrow.up") }.keyboardShortcut(.return, modifiers: .command).buttonStyle(.borderedProminent).disabled(!store.canSend || voice.preparing) }
+                    else { Button(action: submit) { Label(store.mode == "Rewrite" ? "Rewrite" : "Send", systemImage: "arrow.up") }.keyboardShortcut(.return, modifiers: .command).buttonStyle(.borderedProminent).foregroundStyle(Color.onCobalt).disabled(!store.canSend || voice.preparing) }
                 }.controlSize(.large).padding(10).modifier(PebbleGlass())
             }
             Text("Shift-Enter for a new line · Review dictation before sending").font(.caption2).foregroundStyle(.secondary)

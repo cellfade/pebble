@@ -11,7 +11,7 @@ struct ActionCenterView: View {
                     TextEditor(text: $store.actionDraft).scrollContentBackground(.hidden).frame(height: 90).padding(8).background(.quaternary, in: RoundedRectangle(cornerRadius: 12)).accessibilityLabel("Action request").disabled(store.busy)
                     HStack {
                         if store.busy { ProgressView().controlSize(.small); if store.executingAction { Text("Performing approved action…") } else { Button("Cancel") { store.cancel() } } }
-                        else { Button("Propose action") { store.planAction() }.buttonStyle(.borderedProminent).disabled(store.actionDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
+                        else { Button("Propose action") { store.planAction() }.buttonStyle(.borderedProminent).foregroundStyle(Color.onCobalt).disabled(store.actionDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
                         Text("Planning uses the selected local engine.").font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -38,7 +38,7 @@ struct ActionCenterView: View {
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }.frame(maxHeight: 320)
                 Text("Approval applies once to this exact action and expires after five minutes.").font(.caption).foregroundStyle(.secondary)
-                HStack { Button("Cancel") { store.cancelApproval() }.keyboardShortcut(.cancelAction); Spacer(); Button("Approve & run") { store.approveAction(id: proposal.id) }.buttonStyle(.borderedProminent) }
+                HStack { Button("Cancel") { store.cancelApproval() }.keyboardShortcut(.cancelAction); Spacer(); Button("Approve & run") { store.approveAction(id: proposal.id) }.buttonStyle(.borderedProminent).foregroundStyle(Color.onCobalt) }
             }.padding(28).frame(width: 530)
         }
     }

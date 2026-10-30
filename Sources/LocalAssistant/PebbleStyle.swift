@@ -1,6 +1,21 @@
 import SwiftUI
 import AppKit
-extension Color { static let cobalt = Color(red: 0.14, green: 0.31, blue: 0.93) }
+extension Color {
+    static var onCobalt: Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(srgbRed: 0.04, green: 0.06, blue: 0.12, alpha: 1)
+                : NSColor.white
+        })
+    }
+    static var cobalt: Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(srgbRed: 0.58, green: 0.72, blue: 1.0, alpha: 1)
+                : NSColor(srgbRed: 0.14, green: 0.31, blue: 0.93, alpha: 1)
+        })
+    }
+}
 struct PebbleAvatar: View {
     var size: CGFloat = 52
     var body: some View {

@@ -39,7 +39,7 @@ struct SetupView: View {
             HStack {
                 Text(Product.isAppStoreBuild ? "macOS 26+ · Apple Intelligence required" : "macOS 14+ · Apple silicon recommended").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button("Continue") { store.finishSetup() }.buttonStyle(.borderedProminent)
+                Button("Continue") { store.finishSetup() }.buttonStyle(.borderedProminent).foregroundStyle(Color.onCobalt)
             }
             HStack { Link("Privacy policy ↗", destination: Product.privacyURL); Link("Support ↗", destination: Product.supportURL) }.font(.caption)
         }.padding(24).frame(maxWidth: 470).task { await store.refresh() }
